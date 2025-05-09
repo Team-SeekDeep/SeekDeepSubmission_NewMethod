@@ -1,0 +1,11 @@
+google-genai
+google-cloud-storage>=2.8.0
+requests
+pandas
+datasets
+tqdm
+python-dotenv
+ipywidgets
+pip
+ipykernel
+jupyter

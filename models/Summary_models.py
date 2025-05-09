@@ -34,10 +34,8 @@ def get_model_name_gemini_2_0_flash_ver1():
     QUESTION_CONFIG = types.GenerateContentConfig(
     system_instruction=QUESTION_SYSTEM_PROMPT,
     temperature=0.01,
-    # top_p=QUESTION_GENERATION_CONFIG["top_p"],
-    # top_k=QUESTION_GENERATION_CONFIG["top_k"],
     max_output_tokens=512,
-    # candidate_count=QUESTION_GENERATION_CONFIG["candidate_count"]
+
     )
     
     return QUESTION_MODEL_NAME, QUESTION_SYSTEM_PROMPT, QUESTION_CONFIG
@@ -102,10 +100,7 @@ def get_model_name_gemini_2_0_flash_ver2():
     QUESTION_CONFIG = types.GenerateContentConfig(
     system_instruction=QUESTION_SYSTEM_PROMPT,
     temperature=0.1,
-    # top_p=... (optional, add if needed)
-    # top_k=... (optional, add if needed)
     max_output_tokens=1024, # Keep reasonable, adjust if explanations get long
-    # candidate_count=... (optional, add if needed)
     )
 
     return QUESTION_MODEL_NAME, QUESTION_SYSTEM_PROMPT, QUESTION_CONFIG
@@ -137,11 +132,6 @@ def get_model_name_gemini_2_0_flash_ver3():
 
     QUESTION_CONFIG = types.GenerateContentConfig(
     system_instruction=QUESTION_SYSTEM_PROMPT,
-    # temperature= 0.4,
-    # top_p=0.95,
-    # top_k=1,
-    # max_output_tokens=512,
-    # candidate_count=1
     )
     
     return QUESTION_MODEL_NAME, QUESTION_SYSTEM_PROMPT, QUESTION_CONFIG

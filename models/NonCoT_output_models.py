@@ -44,10 +44,6 @@ def get_model_name_gemnini_2_5_flash_preview_04_17():
         include_thoughts=True,
         thinking_budget="8000"
     ),
-    # top_p=0.95,
-    # top_k=1,
-    # max_output_tokens=512,
-    # candidate_count=1
     )
     
     
@@ -95,11 +91,7 @@ def get_model_name_gemini_2_5_pro_exp_03_25():
 
     CONFIG = types.GenerateContentConfig(
     system_instruction=SYSTEM_PROMPT,
-    # temperature= 0.1,
-    # top_p=0.95,
-    # top_k=1,
-    # max_output_tokens=512,
-    # candidate_count=1
+
     )
     
     return MODEL_NAME, SYSTEM_PROMPT, PROMPT_TEMPLATES, CONFIG, REQUESTS_PER_MINUTE, MAX_RETRIES, MAX_ASYNC_WORKERS

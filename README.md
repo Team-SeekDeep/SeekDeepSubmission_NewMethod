@@ -1,11 +1,11 @@
 # Towards Chain-of-Thought Reasoning for Video Understanding with Gemini: An Agentic Chain-of-Chain-of-Thoughts Framework
 
-A comprehensive platform for analyzing video content using Google's Gemini models via the unified `google-genai` SDK, supporting both Vertex AI and Gemini API backends. This project enables downloading videos from a HuggingFace dataset, preparing them (including speed adjustment), and generating intelligent responses to questions about the videos using various prompting strategies. By generating questions using Gemini, we can apply Chain-of-Chain-of-Thoughts with conversation history to proceed one questions.
+A comprehensive platform for analyzing video content using Google's Gemini models via the unified `google-genai` SDK, supporting both Vertex AI and Gemini API backends. This project enables downloading videos from a HuggingFace dataset, preparing them (including speed adjustment), and generating intelligent responses to questions about the videos. It notably introduces an **Agentic Chain-of-Chain-of-Thoughts (CoCoT)** framework, primarily showcased in `Full_Inference_CoCoT_Generated_Questions.ipynb`, for sophisticated context-aware reasoning. A more direct, question-by-question approach for strict guideline adherence is available in `Full_Inference.ipynb`.
 
 # Overview & Functionality
 
-This project introduces a comprehensive and modular platform for advanced video understanding and question-answering, powered by Google's Gemini large language models. It supports both Google Cloud Vertex AI and the direct Gemini API through a unified interface using the google-genai SDK.
-The system is built to process datasets of videos and associated questions using a variety of prompting strategies, offering practitioners tools for both fast inference large-scale evaluation of dataset and interactive experimentation for each video with UI.
+This project provides a modular platform for advanced video understanding using Google's Gemini models, supporting both Vertex AI and direct Gemini API access via the `google-genai` SDK.
+The system processes video datasets and associated questions using diverse prompting strategies, offering tools for large-scale evaluation and interactive UI-based experimentation.
 
 ![Video Analysis](https://img.shields.io/badge/Video-Analysis-blue)
 ![Gemini Models](https://img.shields.io/badge/Gemini-2.x%20Pro/Flash-orange)
@@ -18,105 +18,97 @@ The system is built to process datasets of videos and associated questions using
 
 ## Platform Process
 
-This platform streamlines the process of video understanding tasks by:
+The platform streamlines video understanding tasks through:
 
 1.  Fetching question/video metadata from HuggingFace (`lmms-lab/AISG_Challenge`).
-2.  Downloading the associated videos from a provided zip archive.
-3.  Processing videos (e.g., adjusting playback speed using `ffmpeg`).
-4.  Uploading prepared videos to either Google Cloud Storage (for Vertex AI backend) or the Gemini File API (for Gemini API backend).
-5.  Performing bulk inference across the dataset using different models and prompting strategies (Non-CoT, CoCoT with heuristic question ordering).
-6.  Providing an interactive UI within Jupyter notebooks for testing individual videos and multi-turn conversational prompting (MCQ chaining).
-7.  Saving inference results to CSV files for analysis.
+2.  Downloading associated videos.
+3.  Processing videos (e.g., `ffmpeg` for speed adjustment).
+4.  Uploading prepared videos to Google Cloud Storage (Vertex AI) or Gemini File API.
+5.  Performing bulk inference using:
+    *   **Direct Question-Answering**: Via `Full_Inference.ipynb` for isolated, per-question analysis.
+    *   **Advanced CoCoT**: Via `Full_Inference_CoCoT_Generated_Questions.ipynb` utilizing pre-generated questions and conversational history for context-rich reasoning.
+6.  Providing an interactive UI for multi-turn conversational prompting tests.
+7.  Saving results to CSV and JSON (for chat histories) for analysis.
 
-The modular architecture separates data preparation, inference logic, and UI testing, making the workflow maintainable and adaptable.
+## Notebook Specifics & Execution Details
+
+-   **`Testing_UI_Prompting.ipynb`:**
+    -   Purpose: Interactive testing of single questions and the CoCoT mechanism with generated questions.
+    -   Execution: Allows selection of a video and an original question. For CoCoT, it demonstrates the context-building by using a few pre-generated questions and their CoT answers as history before posing the original question.
+
+-   **`Generated_Questions_By_Videos.ipynb`:**
+    -   Purpose: **Crucial pre-processing for the advanced CoCoT notebook.**
+    -   Execution:
+        1.  Generates a list of relevant guideline questions for each video using a specified Gemini model (`QUESTIONS_MODEL_NAME`).
+        2.  Answers these generated questions sequentially (CoT-style, with video provided each turn) to build a rich conversational history.
+    -   Output: `generated_questions/[QUESTIONS_MODEL_NAME]/questions.csv` (generated questions) and `generated_questions/[QUESTIONS_MODEL_NAME]/chat_history/[video_id].json` (serialized conversation history per video).
+
+-   **`Full_Inference.ipynb` (Stricter, Question-by-Question, used for latest submission of results):**
+    -   Purpose: Bulk inference adhering to guidelines requiring **isolated processing of each original question**.
+    -   Execution: Iterates through original dataset questions. For each, it sends the video and the single original question to the configured model (`MODEL_NAME` from `models/NonCoT_output_models.py` or `models/CoT_output_models.py` for single-turn CoT). No external conversational history or batch context is used.
+    -   Output: CSV results (e.g., `all_results/full_inference_nonCoT/[MODEL_NAME]/...`).
+
+-   **`Full_Inference_CoCoT_Generated_Questions.ipynb` (Enhanced CoCoT):**
+    -   Purpose: **Recommended for optimal performance.** Implements an advanced Agentic CoCoT framework, leveraging context-aware reasoning.
+    -   Execution:
+        1.  For each original dataset question:
+            a.  Loads the pre-built conversational history (JSON) for the video from `Generated_Questions_By_Videos.ipynb`. This history consists of *generated guideline questions* and their CoT answers.
+            b.  Constructs the prompt using the video, the loaded conversational history, and the current *original dataset question*. Heuristic approaches to question ordering within the generated context are implicitly handled by the `Generated_Questions_By_Videos.ipynb` process.
+            c.  Sends this context-rich package to the CoT model (`MODEL_NAME` from `models/CoT_output_models.py`).
+            d.  Optionally, a summary model (`QUESTION_MODEL_NAME` from `models/Summary_models.py`) processes the CoT output for a final concise answer.
+        2.  Utilizes batch processing internally where feasible for API calls, managed by `asyncio` and rate limiters.
+    -   Output: Detailed CSV results (e.g., `all_results/full_inference_CoCoT_generated_questions/[MODEL_NAME]/...`).
+
 
 ## Architecture
 
-The platform follows a general workflow:
+The platform's workflow:
 
-1.  **Data Source:** HuggingFace `datasets` library fetches metadata (`dataset.csv`). Video content comes from a downloadable ZIP archive.
-2.  **Data Preparation:**
-    *   Downloads the video archive (`.zip`).
-    *   Extracts `.mp4` files.
-    *   Processes videos using `ffmpeg` (e.g., slows down playback speed).
-    *   Uploads processed videos to the appropriate storage backend (GCS bucket via `google-cloud-storage` or Gemini File API via `google-genai`).
-    *   Creates/updates a metadata file (`video_metadata_*.csv`) linking questions to video resources (local path, GCS URI or File API name).
-3.  **Storage:** Processed videos reside in Google Cloud Storage (Vertex mode) or are referenced via the Gemini File API (Gemini API mode). Metadata is stored locally in CSV files.
-4.  **Inference Engine:** Leverages the `google-genai` SDK to interact with Gemini models.
-    *   **Vertex AI Backend:** Uses Application Default Credentials (ADC) or service account authentication. Requires `PROJECT_ID`, `LOCATION`, and `GCS_BUCKET`.
-    *   **Gemini API Backend:** Uses an API Key (`GEMINI_API_KEY` or `GOOGLE_API_KEY` environment variable). Uses the File API for video uploads (files expire after ~1 day).
-5.  **Execution & Control:** Jupyter Notebooks (`.ipynb`) orchestrate the workflow, configure settings, define prompting strategies, execute inference, and provide testing UIs.
-    *   `Testing_UI_Prompting.ipynb`: For interactive single-question and multi-turn (CoCoT) testing.
-    *   `Full_Inference.ipynb`: For bulk processing using direct (Non-CoT or CoT) prompts.
-    *   `Generated_Questions_By_Videos.ipynb`: For bulk processing to generate guideline questions for each video processing and generating conversation history for a batch of generated questions.
-    *   `Full_Inference_CoCoT_Generated_Questions.ipynb`: For bulk processing using CoCoT with generated questions.
-6.  **Results:** Inference outputs are saved to specified CSV files (e.g., `results_*.csv`, `all_results/*.csv`). Generated questions with conversation history of each video are saved as json file under generated_questions folder.
+1.  **Data Source:** HuggingFace `datasets` for metadata; ZIP archive for videos.
+2.  **Data Preparation:** Video download, extraction, `ffmpeg` processing (speed), upload to GCS/File API, and `video_metadata_*.csv` creation.
+3.  **Storage:** Processed videos in GCS or Gemini File API; metadata/results in local CSVs/JSONs.
+4.  **Inference Engine:** `google-genai` SDK for Gemini models.
+    *   **Vertex AI Backend:** ADC/service account auth; requires `PROJECT_ID`, `LOCATION`, `GCS_BUCKET`.
+    *   **Gemini API Backend:** API Key; uses File API (files expire ~1 day).
+5.  **Execution & Control (Jupyter Notebooks):**
+    *   `Testing_UI_Prompting.ipynb`: Interactive single-question and multi-turn CoCoT testing with generated questions.
+    *   `Generated_Questions_By_Videos.ipynb`: Generates guideline questions per video and their CoT answers, creating JSON chat histories essential for the advanced CoCoT framework.
+    *   `Full_Inference.ipynb`: For bulk, **stricter question-by-question inference**. Processes each original dataset question in isolation using Non-CoT or basic CoT models. Ensures compliance with guidelines requiring unbatched, non-contextually-chained answers.
+    *   `Full_Inference_CoCoT_Generated_Questions.ipynb`: Implements the **enhanced Agentic Chain-of-Chain-of-Thoughts (CoCoT)**. Leverages conversational history (from `Generated_Questions_By_Videos.ipynb`) and heuristic question ordering for context-aware reasoning on original dataset questions, designed for optimal performance and alignment with updated competition requirements.
+6.  **Results:** Inference outputs in CSVs (e.g., `results_*.csv`); chat histories in `generated_questions/` as JSON.
 
 ## Features
 
--   **Dual Backend Support**: Seamlessly switch between Vertex AI and Gemini API backends via the `USE_VERTEX` flag.
--   **Unified SDK**: Uses the modern `google-genai` library for both backends.
--   **Flexible Storage**: Uploads videos to GCS (Vertex) or File API (Gemini API) based on the chosen backend.
--   **Video Preprocessing**: Includes functionality to adjust video speed using `ffmpeg`.
+-   **Dual Backend Support**: Vertex AI & Gemini API via `USE_VERTEX` flag.
+-   **Unified SDK**: Modern `google-genai` library.
+-   **Flexible Storage**: GCS (Vertex) or File API (Gemini API).
+-   **Video Preprocessing**: `ffmpeg` for speed adjustment.
 -   **Diverse Prompting Strategies**:
-    -   Direct Answering (Non-CoT)
-    -   Chain-of-Thought / Conversation (CoCoT)
-    -   Generating Guideline Questions
--   **Efficient Processing**: Skips unnecessary download, extraction, or preparation steps if data already exists (configurable via `SKIP_*` flags).
--   **Robust Error Handling**: Includes basic retries for API calls (though more sophisticated strategies could be added).
--   **Asynchronous Operations**: Utilizes `asyncio` for potentially faster video preparation and bulk inference (depending on notebook implementation).
--   **Interactive UI Testing**: `ipywidgets`-based UI for easy testing of prompts and models on individual videos.
--   **Comprehensive Metadata Tracking**: Manages video paths, storage URIs/names, and status in a central metadata CSV.
--   **Modular Model Configuration**: Model prompts and configurations are defined in separate Python files (`models/`).
--   **Clear Logging**: Provides informative logs during execution.
--   **Resume Support**: Can often be stopped and resumed, especially during the preparation phase, thanks to skip flags and metadata checks.
+    -   **Direct Question Answering**: Isolated, per-question processing (`Full_Inference.ipynb`).
+    -   **Agentic Chain-of-Chain-of-Thoughts (CoCoT)**: Utilizes generated questions, conversational history, and heuristic question ordering for deep contextual reasoning on original questions (`Full_Inference_CoCoT_Generated_Questions.ipynb`).
+    -   **Automated Guideline Question Generation**: For CoCoT context building (`Generated_Questions_By_Videos.ipynb`).
+-   **Efficient & Robust Processing**: Skip flags for existing data, `asyncio` for speed, basic API retries.
+-   **Interactive UI & Metadata Tracking**: `ipywidgets` UI; `video_metadata_*.csv` for resource management.
+-   **Modular Model Configuration**: Models defined in `models/`.
+-   **Clear Logging & Resume Support**.
+
 ## Installation
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed and configured:
+*   **Python**: 3.10+.
+*   **Package Management**: `pip`, `virtualenv`.
+*   **Google Cloud Account**: Required.
+    *   **Vertex AI**: Billing, Vertex AI API, Cloud Storage API enabled.
+    *   **Gemini API**: Gemini API Key from [AI Studio](https://aistudio.google.com/app/apikey).
+*   **Google Cloud CLI (`gcloud`)**: For Vertex AI auth. Install from [official guide](https://cloud.google.com/sdk/docs/install).
+*   **`ffmpeg`**: For video processing. Install from [ffmpeg.org](https://ffmpeg.org/download.html).
+    *   Linux: `sudo apt update && sudo apt install ffmpeg`
+    *   macOS: `brew install ffmpeg`
+    *   Windows: `winget install --id=Gyan.FFmpeg -e`
+    *   Verify: `ffmpeg -version`
 
-*   **Python**: Version 3.10 or higher.
-*   **Package Management**: `pip` (Python's package installer) and `virtualenv` (recommended for creating isolated Python environments).
-*   **Google Cloud Account**:
-    *   A Google Cloud account is required. [Create one here](https://cloud.google.com/).
-    *   **For Vertex AI Backend Users**:
-        *   Billing must be enabled for your Google Cloud project.
-        *   The Vertex AI API must be enabled.
-        *   The Cloud Storage API must be enabled.
-    *   **For Gemini API Backend Users**:
-        *   You need a Gemini API Key. [Get an API key here](https://aistudio.google.com/app/apikey).
-*   **Google Cloud CLI (`gcloud`)**:
-    *   Required for authentication if using the Vertex AI backend.
-    *   Follow the [Official Google Cloud SDK installation guide](https://cloud.google.com/sdk/docs/install).
-*   **`ffmpeg`**:
-    *   Required for video processing tasks (e.g., adjusting video speed).
-    *   Download from the [official ffmpeg website](https://ffmpeg.org/download.html).
-    *   **Installation Instructions:**
-        *   **Linux (Ubuntu/Debian):**
-            ```bash
-            sudo apt update && sudo apt install ffmpeg
-            ```
-        *   **macOS (using Homebrew):**
-            ```bash
-            brew install ffmpeg
-            ```
-        *   **Windows (using Winget):**
-            ```bash
-            winget install --id=Gyan.FFmpeg -e
-            ```
-    *   Verify the installation by running:
-        ```bash
-        ffmpeg -version
-        ```
-
-
-
- **Install `ffmpeg`:** Follow instructions for your OS from the [official ffmpeg website](https://ffmpeg.org/download.html).
-    *   **Linux (Ubuntu/Debian):** `sudo apt update && sudo apt install ffmpeg`
-    *   **Windows (Scoop/Chocolatey):** `winget install --id=Gyan.FFmpeg  -e`
-
-### Google Cloud Setup (Required for Vertex AI Backend)
+### Google Cloud Setup (Vertex AI Backend)
 
 If you plan to use the Vertex AI backend, follow these steps to configure your Google Cloud environment:
 
@@ -191,51 +183,28 @@ If you plan to use the Vertex AI backend, follow these steps to configure your G
 
 ## Configuration
 
-Configuration is primarily handled within the **Config Settings** cell near the top of each Jupyter notebook (`.ipynb` file). Key settings include:
+Key settings in the **Config Settings** cell of each notebook:
+-   `PROJECT_ID`, `LOCATION`, `GCS_BUCKET` (Vertex AI).
+-   `USE_VERTEX` (Backend choice).
+-   `GEMINI_API_KEY` (Gemini API, prefer env var `GOOGLE_API_KEY`).
+-   File paths (`DATASET_CSV`, `METADATA_FILE`, `RESULTS_FILE`, `QUESTIONS_DIR`, `ANSWERS_DIR`).
+-   `SKIP_*` flags for bypassing processed steps.
+-   `MAX_VIDEOS_TO_PROCESS` for testing.
+-   `MODEL_NAME`, `QUESTION_MODEL_NAME` (for CoCoT/Summary models).
+-   `VIDEO_SPEED_FACTOR`.
 
--   `PROJECT_ID`: Your Google Cloud Project ID (Required for Vertex AI).
--   `LOCATION`: Google Cloud region (Required for Vertex AI, e.g., `us-central1`).
--   `GCS_BUCKET`: Your GCS bucket name (Required for Vertex AI).
--   `USE_VERTEX`: Set `True` for Vertex AI backend, `False` for Gemini API backend.
--   `GEMINI_API_KEY`: Your API key (Required if `USE_VERTEX = False`). **Strongly recommended** to load from environment variables (`GOOGLE_API_KEY`) or a secure source instead of hardcoding.
--   `DATASET_CSV`, `METADATA_FILE`, `RESULTS_FILE`, etc.: Paths for data and results. Note that `METADATA_FILE` changes based on `USE_VERTEX`.
--   `SKIP_FETCH`, `SKIP_DOWNLOAD_ZIP`, `SKIP_EXTRACT`, `SKIP_PREPARE`: Set to `True` to bypass steps if data is already processed/available. Crucial for resuming work or switching backends.
--   `MAX_VIDEOS_TO_PROCESS`: Limit the number of videos for faster testing (set to `None` for all).
--   `MODEL_NAME`: Select the Gemini model (e.g., `gemini-2.0-flash`, `gemini-2.5-pro-preview-03-25`). Ensure compatibility with the chosen backend (Vertex/Gemini API). Model details (prompts, config) are loaded from the `models/` directory.
--   `VIDEO_SPEED_FACTOR`: Factor to adjust video speed (e.g., `0.5` for half speed).
-
-**Before running any notebook, carefully review and adjust the configuration settings.**
+**Review and adjust configuration before running any notebook.**
 
 ## Usage
 
-1.  **Launch Jupyter:**
-    ```bash
-    jupyter lab
-    # or
-    # jupyter notebook
-    ```
-2.  **Open a Notebook:** Choose one of the `.ipynb` files based on your goal.
-3.  **Configure:** Modify the **Config Settings** cell as needed (Backend, API Keys/Project Info, Paths, Skip Flags, Model).
-4.  **Run Cells Sequentially:** Execute the cells in order from top to bottom.
-    *   **Initial Setup:** Imports, Configuration, Model Selection, Client Initialization.
-    *   **Data Fetching/Preparation:** Fetch Dataset, Download/Extract/Prepare Videos. Pay attention to the `SKIP_*` flags. The "Prepare Videos" step handles speed adjustment and uploading to GCS or File API. This only needs to run fully once per backend type (or if videos change).
-    *   **Inference/Testing:** Run either the **Bulk Inference** sections (in `Full_Inference*`, `Full_Inference_CoCoT_Heuristics_Summary*` notebooks) or the **Testing UI** sections (in `Testing_UI_Prompting.ipynb`).
+1.  **Launch Jupyter** (`jupyter lab` or `jupyter notebook`).
+2.  **Open Notebook** based on your goal.
+3.  **Configure** settings in the notebook.
+4.  **Run Cells Sequentially**.
 
-### Notebook Specifics
-
--   **`Testing_UI_Prompting.ipynb`:**
-    -   Purpose: Interactive testing and visualization.
-    -   Sections:
-        -   *Single Prompt Single Question Testing UI*: Select a video with a question, view the prompt, run inference, see the result.
-        -   *## Generated Questions Prompt chaining Testing UI - turn by turn Format*: Select a video with a questions, runs *all* its *generated questions* sequentially using a CoCoT approach (video sent each turn), displays the multi-turn conversation flow and final summary answer per question.
-    -   Output: Interactive widgets within the notebook.
--   **`Full_Inference_CoCoT_Heuristics_Summary.ipynb`:**
-    -   Purpose: Bulk inference using CoCoT strategy with *generated questions* turn by turn.
-    -   Process: For each video, processes generated questions sequentially under conversation history cofig. Video + conversation history sent each turn. Generates CoT reasoning and a final summary answer.
-    -   Output: Saves results to `all_results/full_inference_CoCoT_generated_questions/.csv`.
 
 **Switching Backends (Vertex <-> Gemini API):**
-After changing `USE_VERTEX`, you **must** re-run the "Prepare Videos" step (Cell ID `ae3c86fe` or similar) with `SKIP_PREPARE = False` to upload the videos to the correct backend (GCS or File API). You can set `SKIP_DOWNLOAD_ZIP = True` and `SKIP_EXTRACT = True` if the videos are already downloaded and extracted locally. Remember File API uploads expire.
+Re-run "Prepare Videos" step (`SKIP_PREPARE = False`) after changing `USE_VERTEX`. `SKIP_DOWNLOAD_ZIP` and `SKIP_EXTRACT` can be `True` if local videos exist.
 
 ## Common Issues
 
@@ -272,30 +241,19 @@ This project utilizes Python's standard `logging` module, configured to output d
 
 *   **Viewing Logs:** As you run cells within any of the `.ipynb` notebooks, logs containing timestamps, severity levels (INFO, WARNING, ERROR), and descriptive messages will appear in the output area *below* the corresponding cell. This provides real-time feedback on the progress of tasks like data fetching, video preparation (download, extraction, speed adjustment, upload), API interactions, and any potential errors encountered.
 *   **Persistence:** By default, these logs exist only within the notebook's output cells. They are **not automatically saved** to a separate file. If you clear a cell's output, restart the notebook kernel, or close the notebook without saving the outputs, the logs for that session might be lost (though Jupyter often caches outputs).
-*   **Saving Logs to a File (Recommended for Bulk Inference):** For long-running processes like the bulk inference tasks in `Full_Inference_NonCot.ipynb` and`Full_Inference_CoCoT_Heuristics_Summary.ipynb`, it's highly recommended to capture logs persistently.
+*   **Saving Logs to a File (Recommended for Bulk Inference):** For long-running processes like the bulk inference tasks in `Full_Inference.ipynb` and`Full_Inference_CoCoT_Generated_Questions.ipynb`, it's highly recommended to capture logs persistently.
 
 
-## Best Practices
-- **Submission:** Submit the full chain of thought result for the best benchmark scores.
--   **Virtual Environments:** Always use a Python virtual environment (like `venv`) to manage project dependencies and avoid conflicts with other projects or your system's Python installation. Activate it before installing requirements or running notebooks.
--   **Configuration Management:**
-    -   Carefully review and set the configuration variables in the **Config Settings** cell of *each notebook* before running. Pay close attention to `USE_VERTEX`, `PROJECT_ID`/`GEMINI_API_KEY`, `GCS_BUCKET`, model names, and file paths.
-    -   Use the `SKIP_*` flags (`SKIP_FETCH`, `SKIP_DOWNLOAD_ZIP`, `SKIP_EXTRACT`, `SKIP_PREPARE`) effectively to save time and resources by avoiding redundant data processing steps. Remember to set `SKIP_PREPARE=False` when switching between Vertex and Gemini API backends to ensure videos are uploaded correctly.
--   **API Key Security:** **Never** commit API keys or sensitive credentials directly into your code or notebooks.
-    -   Prefer loading keys from environment variables (`os.environ.get("GOOGLE_API_KEY")`).
-    -   Alternatively, use a `.env` file (requires the `python-dotenv` package) and add `.env` to your `.gitignore`.
--   **Resource Cleanup (Gemini File API):** Files uploaded via the Gemini File API expire automatically after about a day. If you need to manage storage explicitly or run into quota issues sooner, you might need to use the API to list and delete files manually, though this is often unnecessary due to the auto-expiration.
--   **Cost Management:** Be mindful of potential costs associated with:
-    -   **Google Cloud Storage:** Storing large video files (Vertex AI mode).
-    -   **Vertex AI:** Model inference endpoints (especially with Pro models or high usage).
-    -   **Gemini API:** While there's a free tier, exceeding its limits incurs costs. Paid tiers have higher quotas but are billed.
-    -   Monitor your Google Cloud Billing and Gemini API usage dashboards. Use `MAX_VIDEOS_TO_PROCESS` during development to limit costs.
--   **Version Control (`.gitignore`):** Use Git for version control. Create a robust `.gitignore` file to exclude:
-    -   Large data files (`downloads/`, `extracted_videos/`, `speed_videos/`, `*.zip`, `*.mp4`).
-    -   Cache directories (`hf_cache/`, `__pycache__/`, `.ipynb_checkpoints/`).
-    -   Virtual environment directories (`venv/`).
-    -   Sensitive files (`.env`, potentially `*.csv` results if very large or contain sensitive info).
-    -   Log files (`*.log`).
+## Best Practices & Recommended Usage
+
+-   **Submission Strategy / Recommended Usage:**
+    -   For achieving the **best benchmark scores and aligning with updated competition requirements that benefit from advanced reasoning**, we **strongly recommend using the `Full_Inference_CoCoT_Generated_Questions.ipynb` notebook.** Its enhanced CoT architecture, context-aware reasoning using generated questions, and heuristic ordering provide superior performance.
+    -   The `Full_Inference.ipynb` notebook serves as an **essential alternative for demonstrating strict compliance** with guidelines requiring isolated, question-by-question analysis without complex contextual chaining. It offers methodological rigor and transparency.
+-   **Virtual Environments:** Always use.
+-   **Configuration Management:** Review settings carefully; use `SKIP_*` flags effectively. Set `SKIP_PREPARE=False` when switching backends.
+-   **API Key Security:** **Never commit API keys.** Use environment variables.
+-   **Resource Cleanup & Cost Management:** Be mindful of GCS/Vertex AI/Gemini API costs and File API expiration.
+-   **Version Control (`.gitignore`):**
     ```gitignore
     # Python
     __pycache__/
@@ -313,9 +271,10 @@ This project utilizes Python's standard `logging` module, configured to output d
     hf_cache/
     *.zip
     *.mp4
-    video_metadata_*.csv # Often regenerated
-    results_*.csv # Often regenerated
-    all_results/ # Often regenerated
+    video_metadata_*.csv
+    results_*.csv
+    all_results/
+    generated_questions/ # Contains generated CSVs and JSONs
 
     # Jupyter
     .ipynb_checkpoints/
@@ -327,15 +286,14 @@ This project utilizes Python's standard `logging` module, configured to output d
     .DS_Store
     .vscode/
     ```
--   **Understand Backend Differences:** Remember that Vertex AI requires GCP project setup and ADC/Service Account auth, uses GCS, and has different quotas/pricing than the Gemini API, which uses API Keys and the temporary File API storage. Choose the backend appropriate for your needs and constraints.
 
 ## Support and Contact
 
-If you encounter any issues or have questions about using this platform, please reach out to **Dylan (dadevchia@gmail.com)**.
+For detailed support, notebook-specific issues, or configuration questions, please contact Dylan at dadevchia@gmail.com, referencing the notebook name and specific configuration settings involved.
 
 To help diagnose the problem effectively, please include the following information in your communication:
 
-1.  **Which Notebook?** Specify the exact `.ipynb` file you were running (e.g., `Testing_UI_Prompting.ipynb`, `Full_Inference_CoCoT_generated_questions.ipynb`).
+1.  **Which Notebook?** Specify the exact `.ipynb` file you were running (e.g., `Testing_UI_Prompting.ipynb`, `Full_Inference_CoCoT_Generated_Questions.ipynb`).
 2.  **Which Cell?** Indicate the specific cell (e.g., by its execution count `[ ]:` number, or by describing its purpose like "Prepare Videos cell" or "Bulk Inference Loop cell") where the error occurred or the unexpected behavior was observed.
 3.  **Configuration:** Provide the key configuration settings you were using from the **Config Settings** cell (especially `USE_VERTEX`, `MODEL_NAME`, `QUESTION_MODEL_NAME`, relevant `SKIP_*` flag values). **Please remove your API Key or any other sensitive credentials before sharing.**
 4.  **Error Message:** Copy and paste the *complete* error message and traceback, if available.

@@ -103,52 +103,6 @@ def get_model_name_gemini_2_5_pro_preview_03_25():
     
     return MODEL_NAME, SYSTEM_PROMPT, PROMPT_TEMPLATES, CONFIG, REQUESTS_PER_MINUTE, MAX_RETRIES, MAX_ASYNC_WORKERS
 
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Gemini 2.5 Pro Preview 05-06
-# ──────────────────────────────────────────────────────────────────────────────
-def get_model_name_gemini_2_5_pro_preview_05_06():
-    """
-    Returns the model name, prompt templates, and configuration for the specified model.
-    """
-    MODEL_NAME = "gemini-2.5-pro-preview-05-06"
-
-    REQUESTS_PER_MINUTE = 50      
-    MAX_RETRIES = 4
-    MAX_ASYNC_WORKERS = 25
-
-    SYSTEM_PROMPT = """
-    You are an expert in video analysis, specializing in evaluating and comparing actions from videos.
-    You will watch a short video and analyze its content step by step. Your goal is to assess key differences,
-    patterns, and techniques used in the video and provide precise answers to user questions.
-
-    **Crucial Output Format Instructions:**
-
-    After analyzing the video, always provide a comprehensive and detailed chain of thought, such as in the following examples:
-
-    ```thinking
-    - Identify the key actions and events – Observe the main actions taking place in the video, focusing on differences between individuals or objects.
-    - Temporal analysis – Pay attention to the timing and sequence of actions, as they can reveal important insights about the video content.
-    - Compare behaviors and techniques – Analyze how different people in the video perform similar tasks, noting variations in methods, tools, or outcomes.
-    - Highlight patterns and trends – Look for recurring themes or techniques that may indicate a particular logical approach to the task at hand.
-    - Mathematical and logical reasoning – Use mathematical and logical reasoning to draw conclusions to some puzzles or questions that may arise from the video content.
-    - Conclusion – Summarize your findings and provide a clear answer to the user's question, ensuring that your response is well-supported by the analysis.
-    ```
-    """
-
-    # Prompt Template
-
-    PROMPT_TEMPLATES = {
-        "default": "{question}" # Fallback template
-    }
-
-    CONFIG = types.GenerateContentConfig(
-    system_instruction=SYSTEM_PROMPT,
-    )
-
-    return MODEL_NAME, SYSTEM_PROMPT, PROMPT_TEMPLATES, CONFIG, REQUESTS_PER_MINUTE, MAX_RETRIES, MAX_ASYNC_WORKERS
-
-
 def get_cot_model(model_name):
     """
     Returns the model name, prompt templates, and configuration for the specified model.
@@ -157,7 +111,5 @@ def get_cot_model(model_name):
         return get_model_name_gemini_2_0_flash()
     elif model_name == "gemini-2.5-pro-preview-03-25":
         return get_model_name_gemini_2_5_pro_preview_03_25()
-    elif model_name == "gemini-2.5-pro-preview-05-06":
-        return get_model_name_gemini_2_5_pro_preview_05_06()
     else:
         raise ValueError(f"Unknown model name: {model_name}")

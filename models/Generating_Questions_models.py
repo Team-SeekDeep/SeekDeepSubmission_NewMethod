@@ -146,8 +146,6 @@ def get_brainstorm_prompt(model_name, number_of_questions: int = 5):
     
     if model_name == "gemini-2.0-flash":
         return get_brainstorm_prompt_gemini_2_0_flash(number_of_questions)
-    elif model_name == "gemini-2.5-pro-preview-05-06":
-        return get_brainstorm_prompt_gemini_2_5_pro_preview_05_06(number_of_questions)
     else:
         raise ValueError(f"Model name '{model_name}' is not supported.")
     

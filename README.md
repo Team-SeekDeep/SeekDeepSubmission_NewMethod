@@ -11,6 +11,10 @@ A comprehensive platform for analyzing video content using Google's Gemini model
 ![File API](https://img.shields.io/badge/Gemini-File_API-lightgrey)
 ![HuggingFace](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-datasets-yellow)
 
+
+## CoCoT Architecture
+
+![CoCoT Architecture](CoCoT_Method.png)
 ## Overview & Key Optimizations
 
 This project provides a modular platform for advanced video understanding using Google's Gemini models. Key to its performance are several optimizations:

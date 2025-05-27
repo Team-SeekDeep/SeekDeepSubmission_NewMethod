@@ -23,7 +23,7 @@ def get_brainstorm_prompt_gemini_2_0_flash(num_questions):
     
     
     REQUESTS_PER_MINUTE = 150
-    MAX_RETRIES = 1
+    MAX_RETRIES = 5
     MAX_ASYNC_WORKERS = 40
 
     MODEL_NAME = "gemini-2.0-flash"
@@ -41,7 +41,7 @@ def get_brainstorm_prompt_gemini_2_0_flash(num_questions):
     
     SYSTEM_PROMPT = f"""
     ## Job Description
-    You are assisting an AI system in analyzing a video by generating a list of **targeted, well-formed questions**. The goal is to **fact-check**, **validate details**, and help guide further video analysis. Your questions should probe the content deeply and cover multiple perspectives, especially:
+    You are assisting an AI system in analyzing a video by generating a list of **targeted, well-formed questions**. The goal is to **fact-check**, **validate details**, and help guide further video analysis. Your questions should probe the content deeply, especially:
 
     1. **Factual Verification & Detail Check (Priority)**  
     Ask whether specific facts or events happened, whether certain actions occurred, or whether something was shown accurately. These questions must be correctly-led, meaning they should be asked for verification or clarification of specific details.
@@ -62,6 +62,9 @@ def get_brainstorm_prompt_gemini_2_0_flash(num_questions):
     - "What color was the woman’s jacket?"  
     - "Describe the environment where the conversation took place."  
     ## Schema
+    
+    Ensure that the questions generated are all 3 types of questions, and that they are unique.
+    
     Generate exactly **{3*num_questions}** unique questions and give your response using the following schema:
 
     ```json

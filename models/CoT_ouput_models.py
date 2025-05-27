@@ -39,7 +39,14 @@ def get_model_name_gemini_2_0_flash():
     # Prompt Template
 
     PROMPT_TEMPLATES = {
-        "default": "{question}" # Fallback template
+        "default": "{question}", # Fallback template
+        # Priority 1: Must Follow Context
+        "Factual Verification & Detail Check": (
+            "Answer accurately taking cues from the question context. This question is **correctly led**; **ASSUME the context provided is TRUE** and build your reasoning upon it using video evidence. "
+            "Question: {question}"
+        ),
+        "Counting & Enumeration": "Please answer the following question based on the video, analyse the video carefully: {question}",
+        "Identification & Description": "Please answer the following question based on the video, analyse the video carefully: {question}"
     }
 
     # Generation parameters (passed via types.GenerateContentConfig)
@@ -85,8 +92,16 @@ def get_model_name_gemini_2_5_pro_preview_03_25():
     # Prompt Template
 
     PROMPT_TEMPLATES = {
-        "default": "{question}" # Fallback template
+        "default": "{question}", # Fallback template
+        # Priority 1: Must Follow Context
+        "Factual Verification & Detail Check": (
+            "Answer accurately taking cues from the question context. This question is **correctly led**; **ASSUME the context provided is TRUE** and build your reasoning upon it using video evidence. "
+            "Question: {question}"
+        ),
+        "Counting & Enumeration": "Please answer the following question based on the video, analyse the video carefully: {question}",
+        "Identification & Description": "Please answer the following question based on the video, analyse the video carefully: {question}"
     }
+
     
     
     # Generation parameters (passed via types.GenerateContentConfig)
@@ -139,8 +154,16 @@ def get_model_name_gemini_2_5_pro_preview_05_06():
     # Prompt Template
 
     PROMPT_TEMPLATES = {
-        "default": "{question}" # Fallback template
+        "default": "{question}", # Fallback template
+        # Priority 1: Must Follow Context
+        "Factual Verification & Detail Check": (
+            "Answer accurately taking cues from the question context. This question is **correctly led**; **ASSUME the context provided is TRUE** and build your reasoning upon it using video evidence. "
+            "Question: {question}"
+        ),
+        "Counting & Enumeration": "Please answer the following question based on the video, analyse the video carefully: {question}",
+        "Identification & Description": "Please answer the following question based on the video, analyse the video carefully: {question}"
     }
+
 
     CONFIG = types.GenerateContentConfig(
     system_instruction=SYSTEM_PROMPT,

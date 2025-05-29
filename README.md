@@ -14,7 +14,7 @@ A comprehensive platform for analyzing video content using Google's Gemini model
 
 ## CoCoT Architecture
 
-![CoCoT Architecture](CoCoT_Method.png)
+![CoCoT Architecture](CoCoT_Method.jpg)
 ## Overview & Key Optimizations
 
 This project provides a modular platform for advanced video understanding using Google's Gemini models. Key to its performance are several optimizations:
